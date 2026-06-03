@@ -437,7 +437,7 @@ async function logout() {
         method: 'POST',
         mode: 'cors',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'logout', name: currentUser.name })
+        body: JSON.stringify({ action: 'login', name: currentUser.name })
       });
     } catch (e) {}
   }
