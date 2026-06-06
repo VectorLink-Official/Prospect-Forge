@@ -73,11 +73,22 @@
   .profile-avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--accent2), var(--accent)); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: var(--black); }
   .profile-name { font-size: 18px; font-weight: 700; color: #eef; }
   .profile-sub { font-size: 13px; color: var(--muted); }
-  .metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .metric-card { background: var(--dark-gray); border: 0.5px solid var(--border); border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: border-color 0.15s; }
-  .metric-card:hover { border-color: rgba(71,200,255,0.3); }
-  .metric-name { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
-  .metric-val { font-size: 20px; font-weight: 700; color: #eef; line-height: 1; }
+  
+  /* レイアウト改変用スタイル */
+  .profile-container { display: flex; flex-direction: column; gap: 12px; }
+  .metric-item-wrapper { display: flex; flex-direction: column; background: var(--dark-gray); border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 2px; }
+  .metric-row-clickable { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; cursor: pointer; transition: background 0.15s; }
+  .metric-row-clickable:hover { background: rgba(255,255,255,0.02); }
+  .metric-label-group { display: flex; flex-direction: column; gap: 2px; }
+  .metric-label-text { font-size: 13px; font-weight: 600; color: #ccd; }
+  .metric-value-text { font-size: 18px; font-weight: 700; color: #eef; }
+  
+  /* 埋め込みインライングラフ用アコーディオン */
+  .inline-chart-container { display: none; background: #161616; border-top: 0.5px solid rgba(255,255,255,0.04); padding: 12px; transition: all 0.2s ease-out; }
+  .inline-chart-container.active { display: block; }
+  .inline-chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 0 4px; }
+  .inline-chart-title { font-size: 11px; font-weight: 600; color: var(--accent2); }
+  
   .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .form-group { display: flex; flex-direction: column; gap: 5px; }
   .form-group.full { grid-column: 1 / -1; }
@@ -99,8 +110,7 @@
   .settings-label { font-size: 14px; color: #ccd; flex: 1; }
   .settings-val { font-size: 13px; color: var(--muted); }
   #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--green); color: var(--black); padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 700; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
-  .chart-control { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; }
-  .toggle-checkbox { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); cursor: pointer; }
+  .toggle-checkbox { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); cursor: pointer; }
   .toggle-checkbox input { accent-color: var(--accent2); cursor: pointer; }
   @media (max-width: 480px) {
     body { padding: 10px; }
@@ -236,21 +246,9 @@
         </div>
       </div>
       
-      <div class="card" id="chart-card">
-        <div class="chart-control">
-          <div class="card-title" id="chart-title" style="margin-bottom:0;">📈 30日推移比較 (項目をタップで切り替え)</div>
-          <label class="toggle-checkbox">
-            <input type="checkbox" id="toggle-team-avg" checked onchange="renderChart()"> チーム平均を表示
-          </label>
-        </div>
-        <div style="position:relative; width:100%; height:220px; background:var(--dark-gray); border-radius:8px; padding:10px;">
-          <canvas id="analyticsChart"></canvas>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title" id="profile-grid-title">各種目の歴代最高データ</div>
-        <div class="metric-grid" id="metric-grid"></div>
+      <div class="profile-container">
+        <div style="font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; padding-left:4px;" id="profile-grid-title">各種目の歴代最高データ</div>
+        <div id="metric-list-container"></div>
       </div>
     </div>
     <div class="screen" id="screen-report">
@@ -377,8 +375,9 @@ let reportsData = [];
 let allBestRecords = {}; 
 let rankingMode = 'daily'; 
 let selectedPlayerForCoach = null; 
-let activeChartMetric = 'batspeed'; 
+let activeChartMetric = null; // タップされた種目を追跡
 let myChart = null;
+let showTeamAvgGlobal = true; // チーム平均線の状態を保持
 
 const avatarColors = ['#e8ff47','#47c8ff','#ff4757','#2ed573','#ffa502','#a29bfe','#fd79a8','#fdcb6e','#74b9ff','#55efc4','#e17055','#b2bec3'];
 const units = {bench1rm:'kg',bench10rm:'kg',squat1rm:'kg',squat10rm:'kg',dead1rm:'kg',dead10rm:'kg',pulldown:'km/h',batspeed:'km/h',chinups:'回',sprint10:'秒',sprint30:'秒',triplejump:'m',medicine:'m',height:'cm',weight:'kg',ffm:'kg',ffmi:''};
@@ -458,6 +457,7 @@ function initApp() {
 
 function handleCoachPlayerChange() {
   selectedPlayerForCoach = document.getElementById('coach-member-select').value;
+  activeChartMetric = null; // 選手を切り替えたら一度グラフをリセット
   updateProfile(); 
 }
 
@@ -467,6 +467,7 @@ function forceLogout() {
   reportsData = [];
   allBestRecords = {};
   selectedPlayerForCoach = null;
+  activeChartMetric = null;
   if(myChart) { myChart.destroy(); myChart = null; }
   document.getElementById('l-name').value = '';
   document.getElementById('l-id').value = '';
@@ -638,34 +639,64 @@ function updateProfile() {
     { id: 's30m', label: '30m走', val: getBest('s30m') ? getBest('s30m').toFixed(2) + '秒' : '--', stag: isStagnant30Days('s30m', true) }
   ];
   
-  document.getElementById('metric-grid').innerHTML = metrics.map(m => {
+  // アコーディオン・インライングラフ構造の動的書き出し
+  document.getElementById('metric-list-container').innerHTML = metrics.map(m => {
     const isRed = (currentUser.role === '指導者' && m.stag);
-    const textColor = isRed ? 'var(--red)' : '#eef';
+    const textColor = isRed ? 'var(--red)' : 'var(--accent)';
     const labelColor = isRed ? 'rgba(255, 71, 87, 0.7)' : 'var(--muted)';
-    const borderColor = m.id === activeChartMetric ? 'var(--accent2)' : (isRed ? 'rgba(255, 71, 87, 0.2)' : 'var(--border)');
-    
+    const itemBorderColor = m.id === activeChartMetric ? 'var(--accent2)' : 'transparent';
+    const arrowIcon = m.id === activeChartMetric ? '▼' : '▶';
+
     return `
-      <div class="metric-card" style="border-color: ${borderColor};" onclick="switchChartMetric('${m.id}')">
-        <div class="metric-name" style="color: ${labelColor};">${m.label}${isRed ? ' ⚠' : ''}</div>
-        <div class="metric-val" style="color: ${textColor};">${m.val}</div>
+      <div class="metric-item-wrapper" style="border-color: ${itemBorderColor};">
+        <div class="metric-row-clickable" onclick="toggleMetricChart('${m.id}')">
+          <div class="metric-label-group">
+            <span class="metric-name" style="font-size: 11px; color: ${labelColor}; font-weight: 600;">${m.label}${isRed ? ' ⚠' : ''}</span>
+            <span class="metric-val" style="font-size: 20px; font-weight: 700; color: ${textColor}; margin-top:2px;">${m.val}</span>
+          </div>
+          <span style="font-size: 11px; color: var(--muted); padding-right: 4px;">${arrowIcon}</span>
+        </div>
+        
+        <div class="inline-chart-container ${m.id === activeChartMetric ? 'active' : ''}" id="chart-area-${m.id}">
+          <div class="inline-chart-header">
+            <span class="inline-chart-title">📊 30日データ推移</span>
+            <label class="toggle-checkbox" onclick="event.stopPropagation();">
+              <input type="checkbox" id="chk-team-${m.id}" ${showTeamAvgGlobal ? 'checked' : ''} onchange="handleTeamAvgToggle('${m.id}')"> 平均
+            </label>
+          </div>
+          <div style="position:relative; width:100%; height:160px;">
+            <canvas id="canvas-${m.id}"></canvas>
+          </div>
+        </div>
       </div>
     `;
   }).join('');
 
-  renderChart();
+  if (activeChartMetric) {
+    renderInlineChart(activeChartMetric);
+  }
 }
 
-function switchChartMetric(metricId) {
-  activeChartMetric = metricId;
+function toggleMetricChart(metricId) {
+  if (activeChartMetric === metricId) {
+    activeChartMetric = null; // 同じ種目をもう一度触ったら閉じる
+  } else {
+    activeChartMetric = metricId; // 新しい種目のグラフを開く
+  }
   updateProfile();
 }
 
-function renderChart() {
-  const targetName = currentUser.role === '指導者' ? selectedPlayerForCoach : currentUser.name;
-  if (!targetName) return;
+function handleTeamAvgToggle(metricId) {
+  showTeamAvgGlobal = document.getElementById(`chk-team-${metricId}`).checked;
+  renderInlineChart(metricId);
+}
 
-  const ctx = document.getElementById('analyticsChart').getContext('2d');
-  const showTeamAvg = document.getElementById('toggle-team-avg').checked;
+function renderInlineChart(metricId) {
+  const targetName = currentUser.role === '指導者' ? selectedPlayerForCoach : currentUser.name;
+  const canvasElement = document.getElementById(`canvas-${metricId}`);
+  if (!targetName || !canvasElement) return;
+
+  const ctx = canvasElement.getContext('2d');
 
   const dates = [];
   const nowJST = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
@@ -676,45 +707,42 @@ function renderChart() {
 
   const playerData = dates.map(date => {
     const r = reportsData.find(r => r.name === targetName && r.date === date);
-    return (r && r[activeChartMetric] !== "" && r[activeChartMetric] !== undefined) ? parseFloat(r[activeChartMetric]) : null;
+    return (r && r[metricId] !== "" && r[metricId] !== undefined) ? parseFloat(r[metricId]) : null;
   });
 
   const teamAvgData = dates.map(date => {
-    const dailyReports = reportsData.filter(r => r.date === date && r[activeChartMetric] !== "" && r[activeChartMetric] !== undefined);
+    const dailyReports = reportsData.filter(r => r.date === date && r[metricId] !== "" && r[metricId] !== undefined);
     if (dailyReports.length === 0) return null;
-    const sum = dailyReports.reduce((acc, r) => acc + parseFloat(r[activeChartMetric]), 0);
+    const sum = dailyReports.reduce((acc, r) => acc + parseFloat(r[metricId]), 0);
     return parseFloat((sum / dailyReports.length).toFixed(2));
   });
 
-  const targetVal = metricTargets[activeChartMetric] || null;
+  const targetVal = metricTargets[metricId] || null;
   const targetData = dates.map(() => targetVal);
 
   if (myChart) { myChart.destroy(); }
 
-  const nameMap = {ffm:'除脂肪体重', ffmi:'除脂肪指数', b10:'ベンチ10RM', s10:'スクワット10RM', d10:'デッドリフト10RM', chin:'懸垂', bat:'バットスピード', pull:'プルダウン', med:'メディシン投げ', triple:'三段跳び', s10m:'10m走', s30m:'30m走', b1:'ベンチ1RM', s1:'スクワット1RM', d1:'デッドリフト1RM', weight:'体重', height:'身長'};
-  document.getElementById('chart-title').textContent = `📈 30日推移: ${nameMap[activeChartMetric] || activeChartMetric}`;
-
   const datasets = [
     {
-      label: '個人記録',
+      label: '個人',
       data: playerData,
       borderColor: '#47c8ff',
-      backgroundColor: 'rgba(71, 200, 255, 0.1)',
-      borderWidth: 2.5,
+      backgroundColor: 'rgba(71, 200, 255, 0.05)',
+      borderWidth: 2,
       tension: 0.1,
       spanGaps: true,
-      pointRadius: 3
+      pointRadius: 2.5
     }
   ];
 
-  if (showTeamAvg) {
+  if (showTeamAvgGlobal) {
     datasets.push({
-      label: 'チーム平均',
+      label: '平均',
       data: teamAvgData,
       borderColor: '#e8ff47',
       backgroundColor: 'transparent',
-      borderWidth: 1.5,
-      borderDash: [4, 4],
+      borderWidth: 1.2,
+      borderDash: [3, 3],
       tension: 0.1,
       spanGaps: true,
       pointRadius: 0
@@ -723,11 +751,11 @@ function renderChart() {
 
   if (targetVal !== null) {
     datasets.push({
-      label: '目標値',
+      label: '目標',
       data: targetData,
       borderColor: '#ff4757',
       backgroundColor: 'transparent',
-      borderWidth: 1.5,
+      borderWidth: 1.2,
       borderDash: [2, 2],
       pointRadius: 0,
       fill: false
@@ -742,8 +770,8 @@ function renderChart() {
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#8899aa', font: { size: 9 } } },
-        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8899aa', font: { size: 10 } } }
+        x: { grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { color: '#778899', font: { size: 8 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#778899', font: { size: 9 } } }
       }
     }
   });
