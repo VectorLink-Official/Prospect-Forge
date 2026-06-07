@@ -6,7 +6,6 @@ const STATIC_ASSETS = [
   'icon_large.png'
 ];
 
-// インストール時に静的ファイルをキャッシュ
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
@@ -14,7 +13,6 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// 古いキャッシュを削除
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -24,23 +22,26 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// GASへのリクエストはキャッシュしない（Network Only）
-// 静的ファイルはNetwork First（オフライン時はキャッシュから）
 self.addEventListener('fetch', event => {
   const url = event.request.url;
 
-  // GASへのリクエストはそのまま通す
-  if (url.includes('script.google.com')) {
-    event.respondWith(fetch(event.request));
-    return;
+  // GASへのリクエスト・chrome拡張・非HTTPはSWで一切触らない
+  if (
+    url.includes('script.google.com') ||
+    url.startsWith('chrome-extension') ||
+    !url.startsWith('http')
+  ) {
+    return; // respondWith を呼ばずにスルー
   }
 
   // 静的アセットはNetwork First
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
         return response;
       })
       .catch(() => caches.match(event.request))
