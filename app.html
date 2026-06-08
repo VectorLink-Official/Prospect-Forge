@@ -23,6 +23,11 @@
     --red: #ff4757;
     --green: #2ed573;
     --orange: #ffa502;
+    
+    /* 黒背景に対する視認性と識別性を極限まで高めたマイルストーンカラー */
+    --clr-achieved: #e8ff47;   /* 🏆目標達成：超高輝度ライムイエロー */
+    --clr-near: #00f0ff;       /* 📈未達(70%以上)：発光ネオンライトブルー */
+    --clr-low: #7090ff;        /* 🚨大幅未達(70%未満)：黒に沈まない明快ラベンダーブルー */
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--black); color: #ccd; font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif; padding: 20px; }
@@ -273,15 +278,15 @@
           </div>
           <div class="form-group">
             <label class="form-label">身長 (cm)</label>
-            <input type="number" class="form-input" id="f-height" placeholder="175.0" oninput="calcDerived()">
+            <input type="number" class="form-input" id="f-height" placeholder="175.0" step="0.1" oninput="calcDerived()">
           </div>
           <div class="form-group">
             <label class="form-label">体重 (kg)</label>
-            <input type="number" class="form-input" id="f-weight" placeholder="75.0" oninput="calcDerived()">
+            <input type="number" class="form-input" id="f-weight" placeholder="75.0" step="0.1" oninput="calcDerived()">
           </div>
           <div class="form-group">
             <label class="form-label">体脂肪率 (%)</label>
-            <input type="number" class="form-input" id="f-bf" placeholder="16" oninput="calcDerived()">
+            <input type="number" class="form-input" id="f-bf" placeholder="16" step="0.1" oninput="calcDerived()">
           </div>
           <div class="form-group calc-container">
             <div class="calc-row">
@@ -295,55 +300,55 @@
           </div>
           <div class="form-group">
             <label class="form-label">バットスピード (km/h)</label>
-            <input type="number" class="form-input" id="f-bat" placeholder="130">
+            <input type="number" class="form-input" id="f-bat" placeholder="130" step="0.1">
           </div>
           <div class="form-group">
             <label class="form-label">プルダウン (km/h)</label>
-            <input type="number" class="form-input" id="f-pull" placeholder="140">
+            <input type="number" class="form-input" id="f-pull" placeholder="140" step="0.1">
           </div>
           <div class="form-group">
             <label class="form-label">ベンチプレス 1RM (kg)</label>
-            <input type="number" class="form-input" id="f-b1" placeholder="100">
+            <input type="number" class="form-input" id="f-b1" placeholder="100" step="0.5">
           </div>
           <div class="form-group">
             <label class="form-label">スクワット 1RM (kg)</label>
-            <input type="number" class="form-input" id="f-s1" placeholder="200">
+            <input type="number" class="form-input" id="f-s1" placeholder="200" step="0.5">
           </div>
           <div class="form-group">
             <label class="form-label">デッドリフト 1RM (kg)</label>
-            <input type="number" class="form-input" id="f-d1" placeholder="250">
+            <input type="number" class="form-input" id="f-d1" placeholder="250" step="0.5">
           </div>
           <div class="form-group">
             <label class="form-label">懸垂 (回)</label>
-            <input type="number" class="form-input" id="f-chin" placeholder="20">
+            <input type="number" class="form-input" id="f-chin" placeholder="20" step="1">
           </div>
           <div class="form-group">
             <label class="form-label">ベンチプレス 10RM (kg)</label>
-            <input type="number" class="form-input" id="f-b10" placeholder="75">
+            <input type="number" class="form-input" id="f-b10" placeholder="75" step="0.5">
           </div>
           <div class="form-group">
             <label class="form-label">スクワット 10RM (kg)</label>
-            <input type="number" class="form-input" id="f-s10" placeholder="150">
+            <input type="number" class="form-input" id="f-s10" placeholder="150" step="0.5">
           </div>
           <div class="form-group">
             <label class="form-label">デッドリフト 10RM (kg)</label>
-            <input type="number" class="form-input" id="f-d10" placeholder="185">
+            <input type="number" class="form-input" id="f-d10" placeholder="185" step="0.5">
           </div>
           <div class="form-group">
             <label class="form-label">メディシン バックスロー (m)</label>
-            <input type="number" class="form-input" id="f-med" placeholder="18.5" step="15.0">
+            <input type="number" class="form-input" id="f-med" placeholder="18.5" step="0.1">
           </div>
           <div class="form-group">
             <label class="form-label">10m走 (秒)</label>
-            <input type="number" class="form-input" id="f-10m" placeholder="1.62" step="1.80">
+            <input type="number" class="form-input" id="f-10m" placeholder="1.62" step="0.01">
           </div>
           <div class="form-group">
             <label class="form-label">30m走 (秒)</label>
-            <input type="number" class="form-input" id="f-30m" placeholder="3.95" step="4.30">
+            <input type="number" class="form-input" id="f-30m" placeholder="3.95" step="0.01">
           </div>
           <div class="form-group">
             <label class="form-label">三段跳び (m)</label>
-            <input type="number" class="form-input" id="f-triple" placeholder="9.20" step="7.5">
+            <input type="number" class="form-input" id="f-triple" placeholder="9.20" step="0.01">
           </div>
           <div class="form-group full">
             <button class="submit-btn" id="btn-submit" onclick="submitReport()">報告を提出する</button>
@@ -408,11 +413,6 @@ let appConfigMap = {};
 const avatarColors = ['#e8ff47','#47c8ff','#ff4757','#2ed573','#ffa502','#a29bfe','#fd79a8','#fdcb6e','#74b9ff','#55efc4','#e17055','#b2bec3'];
 const units = {bench1rm:'kg',bench10rm:'kg',squat1rm:'kg',squat10rm:'kg',dead1rm:'kg',dead10rm:'kg',pulldown:'km/h',batspeed:'km/h',chinups:'回',sprint10:'秒',sprint30:'秒',triplejump:'m',medicine:'m',height:'cm',weight:'kg',ffm:'kg',ffmi:''};
 const eventMap = {bench1rm:'b1',bench10rm:'b10',squat1rm:'s1',squat10rm:'s10',dead1rm:'d1',dead10rm:'d10',pulldown:'pull',batspeed:'bat',chinups:'chin',sprint10:'s10m',sprint30:'s30m',triplejump:'triple',medicine:'med',height:'height',weight:'weight',ffm:'ffm',ffmi:'ffmi'};
-
-const metricTargets = {
-  ffm: 65, ffmi: 22, b1: 100, b10: 80, s1: 140, s10: 110, d1: 160, d10: 130,
-  chin: 20, bat: 150, pull: 140, med: 18.0, s10m: 1.60, s30m: 3.90, triple: 9.50, weight: 75, height: 180
-};
 
 async function attemptLogin() {
   const name = document.getElementById('l-name').value.trim();
@@ -627,6 +627,33 @@ function renderRanking() {
   }).join('');
 }
 
+function getMetricColorClassAndHex(metricId, currentValue) {
+  if (currentValue === null || currentValue === undefined || currentValue === '') {
+    return { hex: '#ccd', isDefault: true }; 
+  }
+  const config = appConfigMap[metricId];
+  if (!config || config.target == null || config.target === 0) {
+    return { hex: '#eef', isDefault: true }; 
+  }
+
+  const val = parseFloat(currentValue);
+  const target = parseFloat(config.target);
+  if (isNaN(val) || isNaN(target)) return { hex: '#eef', isDefault: true };
+
+  const isTime = (metricId === 's10m' || metricId === 's30m'); 
+  if (isTime) {
+    if (val <= target) return { hex: 'var(--clr-achieved)' }; 
+    const ratio = target / val; 
+    if (ratio >= 0.70) return { hex: 'var(--clr-near)' }; 
+    return { hex: 'var(--clr-low)' }; 
+  } else {
+    if (val >= target) return { hex: 'var(--clr-achieved)' }; 
+    const ratio = val / target; 
+    if (ratio >= 0.70) return { hex: 'var(--clr-near)' }; 
+    return { hex: 'var(--clr-low)' }; 
+  }
+}
+
 function updateProfile() {
   const targetName = currentUser.role === '指導者' ? selectedPlayerForCoach : currentUser.name;
   
@@ -677,7 +704,6 @@ function updateProfile() {
   let sq10 = getBest('s10') || 0;
   let dl10 = getBest('d10') || 0;
   let chin = getBest('chin') || 0;
-
   let totalScore = (bp10 * 1.5625) + (sq10 * 0.8333333) + (dl10 * 0.75) + (chin * 5);
 
   let rankStr = 'D';
@@ -692,33 +718,35 @@ function updateProfile() {
   document.getElementById('prof-sub-id').textContent = `身長 ${latestHeight}cm / ${rankDescStr}`;
 
   const metrics = [
-    { id: 'ffm', label: '除脂肪体重', val: getBest('ffm') ? getBest('ffm').toFixed(1) + 'kg' : '--', stag: isStagnantCustomDays('ffm') },
-    { id: 'ffmi', label: '除脂肪指数', val: getBest('ffmi') ? getBest('ffmi').toFixed(1) : '--', stag: isStagnantCustomDays('ffmi') },
-    { id: 'b10', label: 'ベンチ 10RM', val: getBest('b10') ? getBest('b10') + 'kg' : '--', stag: isStagnantCustomDays('b10') },
-    { id: 's10', label: 'スクワット 10RM', val: getBest('s10') ? getBest('s10') + 'kg' : '--', stag: isStagnantCustomDays('s10') },
-    { id: 'd10', label: 'デッドリフト 10RM', val: getBest('d10') ? getBest('d10') + 'kg' : '--', stag: isStagnantCustomDays('d10') },
-    { id: 'chin', label: '懸垂', val: getBest('chin') ? getBest('chin') + '回' : '--', stag: isStagnantCustomDays('chin') },
-    { id: 'bat', label: 'バットスピード', val: getBest('bat') ? getBest('bat') + 'km/h' : '--', stag: isStagnantCustomDays('bat') },
-    { id: 'pull', label: 'プルダウン', val: getBest('pull') ? getBest('pull') + 'km/h' : '--', stag: isStagnantCustomDays('pull') },
-    { id: 'med', label: 'メディシン投げ', val: getBest('med') ? getBest('med') + 'm' : '--', stag: isStagnantCustomDays('med') },
-    { id: 'triple', label: '三段跳び', val: getBest('triple') ? getBest('triple') + 'm' : '--', stag: isStagnantCustomDays('triple') },
-    { id: 's10m', label: '10m走', val: getBest('s10m') ? getBest('s10m').toFixed(2) + '秒' : '--', stag: isStagnantCustomDays('s10m') },
-    { id: 's30m', label: '30m走', val: getBest('s30m') ? getBest('s30m').toFixed(2) + '秒' : '--', stag: isStagnantCustomDays('s30m') }
+    { id: 'ffm', label: '除脂肪体重', val: getBest('ffm') ? getBest('ffm').toFixed(1) + 'kg' : '--', stag: isStagnantCustomDays('ffm'), raw: getBest('ffm') },
+    { id: 'ffmi', label: '除脂肪指数', val: getBest('ffmi') ? getBest('ffmi').toFixed(1) : '--', stag: isStagnantCustomDays('ffmi'), raw: getBest('ffmi') },
+    { id: 'b10', label: 'ベンチ 10RM', val: getBest('b10') ? getBest('b10') + 'kg' : '--', stag: isStagnantCustomDays('b10'), raw: getBest('b10') },
+    { id: 's10', label: 'スクワット 10RM', val: getBest('s10') ? getBest('s10') + 'kg' : '--', stag: isStagnantCustomDays('s10'), raw: getBest('s10') },
+    { id: 'd10', label: 'デッドリフト 10RM', val: getBest('d10') ? getBest('d10') + 'kg' : '--', stag: isStagnantCustomDays('d10'), raw: getBest('d10') },
+    { id: 'chin', label: '懸垂', val: getBest('chin') ? getBest('chin') + '回' : '--', stag: isStagnantCustomDays('chin'), raw: getBest('chin') },
+    { id: 'bat', label: 'バットスピード', val: getBest('bat') ? getBest('bat') + 'km/h' : '--', stag: isStagnantCustomDays('bat'), raw: getBest('bat') },
+    { id: 'pull', label: 'プルダウン', val: getBest('pull') ? getBest('pull') + 'km/h' : '--', stag: isStagnantCustomDays('pull'), raw: getBest('pull') },
+    { id: 'med', label: 'メディシン投げ', val: getBest('med') ? getBest('med') + 'm' : '--', stag: isStagnantCustomDays('med'), raw: getBest('med') },
+    { id: 'triple', label: '三段跳び', val: getBest('triple') ? getBest('triple') + 'm' : '--', stag: isStagnantCustomDays('triple'), raw: getBest('triple') },
+    { id: 's10m', label: '10m走', val: getBest('s10m') ? getBest('s10m').toFixed(2) + '秒' : '--', stag: isStagnantCustomDays('s10m'), raw: getBest('s10m') },
+    { id: 's30m', label: '30m走', val: getBest('s30m') ? getBest('s30m').toFixed(2) + '秒' : '--', stag: isStagnantCustomDays('s30m'), raw: getBest('s30m') }
   ];
   
   document.getElementById('metric-list-container').innerHTML = metrics.map(m => {
     const isRed = (currentUser.role === '指導者' && m.stag);
-    const textColor = isRed ? 'var(--red)' : 'var(--accent)';
     const labelColor = isRed ? 'rgba(255, 71, 87, 0.7)' : 'var(--muted)';
     const itemBorderColor = m.id === activeChartMetric ? 'var(--accent2)' : 'transparent';
     const arrowIcon = m.id === activeChartMetric ? '▼' : '▶';
+
+    const colorInfo = getMetricColorClassAndHex(m.id, m.raw);
+    const valueTextColor = colorInfo.hex;
 
     return `
       <div class="metric-item-wrapper" style="border-color: ${itemBorderColor};">
         <div class="metric-row-clickable" onclick="toggleMetricChart('${m.id}')">
           <div class="metric-label-group">
             <span class="metric-name" style="font-size: 11px; color: ${labelColor}; font-weight: 600;">${m.label}${isRed ? ' ⚠' : ''}</span>
-            <span class="metric-val" style="font-size: 20px; font-weight: 700; color: ${textColor}; margin-top:2px;">${m.val}</span>
+            <span class="metric-val" style="font-size: 20px; font-weight: 700; color: ${valueTextColor}; margin-top:2px;">${m.val}</span>
           </div>
           <span style="font-size: 11px; color: var(--muted); padding-right: 4px;">${arrowIcon}</span>
         </div>
@@ -775,7 +803,6 @@ function renderInlineChart(metricId) {
   if (!targetName || !canvasElement) return;
 
   const ctx = canvasElement.getContext('2d');
-  
   const dates = [];
   const nowJST = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
 
@@ -808,6 +835,11 @@ function renderInlineChart(metricId) {
   const targetVal = (currentMetricConfig && currentMetricConfig.target != null) ? currentMetricConfig.target : null;
   const targetData = dates.map(() => targetVal);
 
+  const pointColors = playerData.map(val => {
+    if (val === null) return '#47c8ff';
+    return getMetricColorClassAndHex(metricId, val).hex;
+  });
+
   if (myChart) { myChart.destroy(); }
 
   const datasets = [
@@ -819,7 +851,9 @@ function renderInlineChart(metricId) {
       borderWidth: 2,
       tension: 0.1,
       spanGaps: true,
-      pointRadius: dates.length > 90 ? 1 : 2.5
+      pointRadius: dates.length > 90 ? 1.5 : 3.5,
+      pointBackgroundColor: pointColors, 
+      pointBorderColor: pointColors
     }
   ];
 
@@ -960,11 +994,7 @@ async function submitReport() {
   const payload = {
     date: document.getElementById('f-date').value,
     name: currentUser.name,
-    height: h, 
-    weight: w, 
-    bf: bf, 
-    ffm: ffm, 
-    ffmi: ffmi,
+    height: h, weight: w, bf: bf, ffm: ffm, ffmi: ffmi,
     bat: parseFloat(document.getElementById('f-bat').value) || "",
     pull: parseFloat(document.getElementById('f-pull').value) || "",
     b1: parseFloat(document.getElementById('f-b1').value) || "",
@@ -988,10 +1018,16 @@ async function submitReport() {
       body: JSON.stringify({ action: 'report', payload: payload })
     });
     const result = await response.json();
-    console.log('GASレスポンス:', JSON.stringify(result)); 
     
     if(result.success) {
-      reportsData.push(payload);
+      let existingIdx = reportsData.findIndex(r => r.name === payload.name && r.date === payload.date);
+      if (existingIdx !== -1) {
+        for (let key in payload) {
+          if (payload[key] !== "") reportsData[existingIdx][key] = payload[key];
+        }
+      } else {
+        reportsData.push(payload);
+      }
       
       const keys = ['height','weight','bf','ffm','ffmi','bat','pull','b1','s1','d1','chin','b10','s10','d10','med','s10m','s30m','triple'];
       if(!allBestRecords[currentUser.name]) allBestRecords[currentUser.name] = {};
@@ -1048,7 +1084,9 @@ function buildExportCheckboxGrid() {
 }
 
 function openExportModal() { document.getElementById('export-modal').classList.add('active'); }
-function closeExportModal() { document.getElementById('export-modal').remove('active'); }
+
+// 【指摘①修正】存在しない.remove()メソッドを、正しい.classList.remove()に完全修復しました
+function closeExportModal() { document.getElementById('export-modal').classList.remove('active'); }
 
 function formatExportValue(id, val) {
   if (val === undefined || val === null || val === '') return '';
