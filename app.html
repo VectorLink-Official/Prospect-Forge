@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Train Elite</title>
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -27,7 +27,7 @@
     --clr-near: #00f0ff;
     --clr-low: #7090ff;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
   body { background: var(--black); color: #ccd; font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif; padding: 20px; }
   #login-screen { max-width: 400px; margin: 80px auto; background: var(--dark-gray); border: 0.5px solid var(--border); border-radius: 16px; padding: 30px; display: flex; flex-direction: column; gap: 16px; }
   .login-title { font-size: 20px; font-weight: 700; color: var(--accent); text-align: center; margin-bottom: 10px; }
@@ -784,6 +784,24 @@ function validateFormInputs(payload) {
     if (configMax !== null && val > configMax) { alert(`【入力エラー】${fieldNamesMap[key]}の値 (${val}) が高すぎます。\n上限値: ${configMax} 以下を入力してください。`); return false; }
   }
   return true;
+}
+
+function showScreen(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const target = document.getElementById('screen-' + screenId);
+  if (target) target.classList.add('active');
+  const navBtn = document.querySelector(`.nav-btn[data-screen="${screenId}"]`);
+  if (navBtn) navBtn.classList.add('active');
+  if (screenId === 'ranking') renderRanking();
+  if (screenId === 'profile') updateProfile();
+}
+
+function setRankMode(mode) {
+  rankingMode = mode;
+  document.getElementById('btn-rank-daily').classList.toggle('active', mode === 'daily');
+  document.getElementById('btn-rank-alltime').classList.toggle('active', mode === 'alltime');
+  renderRanking();
 }
 
 async function submitReport() {
