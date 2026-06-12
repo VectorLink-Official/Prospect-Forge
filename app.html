@@ -960,7 +960,6 @@ async function loadComments() {
     if (currentUser.role === '指導者') renderCoachCommentHistory();
   } catch(e) { console.warn('コメント取得失敗:', e); }
 }
-}
 
 async function sendComment() {
   const body = document.getElementById('coach-comment-input').value.trim();
