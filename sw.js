@@ -1,4 +1,4 @@
-const CACHE_NAME = 'prospect-forge-v3';
+const CACHE_NAME = 'prospect-forge-v4';
 const STATIC_ASSETS = [
   'index.html',
   'manifest.json',
