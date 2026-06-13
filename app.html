@@ -1323,7 +1323,7 @@ function renderThreadList() {
     </div>`;
   }).join('') : '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">メッセージはありません</div>';
   const banner = document.getElementById('notif-permission-banner');
-  if (banner) banner.style.display = Notification.permission === 'default' ? 'block' : 'none';
+  if (banner) banner.style.display = getNotifPermission() === 'default' ? 'block' : 'none';
 }
 
 let activeThreadPartner = '';
@@ -1459,7 +1459,7 @@ function renderPlayerComments() {
   }
   renderThreadList();
   const banner = document.getElementById('notif-permission-banner');
-  if (banner) banner.style.display = Notification.permission === 'default' ? 'block' : 'none';
+  if (banner) banner.style.display = getNotifPermission() === 'default' ? 'block' : 'none';
 }
 
 // 開いたスレッドのうち自分宛の未読を既読化
@@ -1618,6 +1618,10 @@ function initNotifications() {
   // 指導者：毎日21時のリマインダーをスケジュール
   if (currentUser && currentUser.role === '指導者') scheduleCoachReminder();
 }
+// 'Notification' が未定義のブラウザ(一部のiOS Safari/PWA環境)でも安全に参照するためのヘルパー
+function getNotifPermission() {
+  return ('Notification' in window) ? Notification.permission : 'unsupported';
+}
 function updateNotifStatusUI() {
   const btn = document.getElementById('notif-settings-btn');
   const txt = document.getElementById('notif-status-text');
@@ -1625,10 +1629,10 @@ function updateNotifStatusUI() {
     if (txt) txt.textContent = 'このブラウザはプッシュ通知に対応していません';
     if (btn) btn.style.display = 'none'; return;
   }
-  if (Notification.permission === 'granted') {
+  if (getNotifPermission() === 'granted') {
     if (txt) txt.textContent = '✓ 通知が有効です';
     if (btn) btn.style.display = 'none';
-  } else if (Notification.permission === 'denied') {
+  } else if (getNotifPermission() === 'denied') {
     if (txt) txt.textContent = '通知がブロックされています。ブラウザの設定から許可してください。';
     if (btn) btn.style.display = 'none';
   } else {
@@ -1646,12 +1650,12 @@ async function requestNotifPermission() {
 }
 function sendPushToPlayer(name, title, body) {
   // Service Workerを通じたローカル通知（同端末のみ。クロスデバイスにはサーバー側VAPID対応が必要）
-  if (Notification.permission === 'granted' && swRegistration) {
+  if (getNotifPermission() === 'granted' && swRegistration) {
     swRegistration.showNotification(title, { body, icon: 'icon.png', badge: 'icon.png', tag: `msg-${name}` });
   }
 }
 function scheduleCoachReminder() {
-  if (Notification.permission !== 'granted') return;
+  if (getNotifPermission() !== 'granted') return;
   const now = new Date(new Date().getTime() + 9*60*60*1000);
   const target = new Date(now);
   target.setHours(21, 0, 0, 0);
