@@ -693,11 +693,12 @@
 </div>
 
 <script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzFiQm-XNeP82pVT29UosUnnr7ODrE7L7QVVvvSsAuUIMT-POPOpzQhJrAlKcCzDZbT/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzDjwmWxSh2MisKWZIXw22m3Iabvto6GOdUzeP-8UUKc03Ff8sESrwYF5aUs7Mk2eCU/exec';
 
 let currentUser = null;
 let teamMembers = [];
 let coachesData = []; // 指導者の氏名一覧
+let allMembersData = []; // 引退含む全選手 [{ name, status }]
 let reportsData = []; 
 let allBestRecords = {}; 
 let vbtData = []; // VBTログ(直近30日)
@@ -818,7 +819,7 @@ function renderRanking() {
     const rankText = i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;
     return `<tr>
       <td><span class="rank-num ${rankClass}">${rankText}</span></td>
-      <td><strong style="color:#eef;">${row.n}</strong></td>
+      <td><strong style="color:#eef;">${displayName(row.n)}</strong></td>
       <td style="font-size:15px;font-weight:700;color:var(--accent);">${row.v}${unit}</td>
     </tr>`;
   }).join('');
@@ -851,7 +852,7 @@ function renderCompositeRanking() {
     const rankText = i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;
     return `<tr>
       <td><span class="rank-num ${rankClass}">${rankText}</span></td>
-      <td><strong style="color:#eef;">${row.n}</strong></td>
+      <td><strong style="color:#eef;">${displayName(row.n)}</strong></td>
       <td style="font-size:15px;font-weight:700;color:var(--accent);">${row.v}${units.composite}</td>
     </tr>`;
   }).join('');
@@ -884,11 +885,26 @@ function renderInlineChart(metricId) {
     const v = getMetricValue(r);
     return v !== null ? parseFloat(v.toFixed(1)) : null;
   });
-  const teamAvgData = dates.map(date => {
-    const dailyReports = reportsData.filter(r => r.date === date).map(r => ({ r, v: getMetricValue(r) })).filter(x => x.v !== null);
-    if (dailyReports.length === 0) return null;
-    return parseFloat((dailyReports.reduce((acc, x) => acc + x.v, 0) / dailyReports.length).toFixed(2));
-  });
+  // チームの歴代最高値の中央値(引退選手除く)
+  const teamBestValues = teamMembers.map(name => {
+    if (metricId === 'composite') {
+      const best = allBestRecords[name] || {};
+      const b10 = best['b10']||0, s10 = best['s10']||0, d10 = best['d10']||0, chin = best['chin']||0;
+      if (!b10 && !s10 && !d10 && !chin) return null;
+      return b10*1.5625 + s10*0.8333333 + d10*0.75 + chin*5;
+    }
+    const v = (allBestRecords[name] || {})[metricId];
+    return (v !== undefined && v !== null && v !== '') ? parseFloat(v) : null;
+  }).filter(v => v !== null).sort((a,b) => a - b);
+  const teamMedian = (() => {
+    if (teamBestValues.length === 0) return null;
+    const mid = Math.floor(teamBestValues.length / 2);
+    return teamBestValues.length % 2 === 0
+      ? parseFloat(((teamBestValues[mid-1] + teamBestValues[mid]) / 2).toFixed(2))
+      : teamBestValues[mid];
+  })();
+  // チャートの全日付に同じ中央値を横線として引く
+  const teamAvgData = dates.map(() => teamMedian);
   const currentMetricConfig = effectiveConfigMap(targetName)[metricId] || {};
   const targetVal = (currentMetricConfig && currentMetricConfig.target != null) ? currentMetricConfig.target : null;
   const targetData = dates.map(() => targetVal);
@@ -900,7 +916,7 @@ function renderInlineChart(metricId) {
       labels: dates.map(d => d.slice(5)),
       datasets: [
         { label: '個人', data: playerData, borderColor: '#47c8ff', backgroundColor: 'rgba(71, 200, 255, 0.05)', borderWidth: 2, tension: 0.1, spanGaps: true, pointRadius: dates.length > 90 ? 1.5 : 3.5, pointBackgroundColor: pointColors, pointBorderColor: '#ffffff', pointBorderWidth: 1.2 },
-        ...(showTeamAvgGlobal ? [{ label: '平均', data: teamAvgData, borderColor: '#e8ff47', backgroundColor: 'transparent', borderWidth: 1.2, borderDash: [3, 3], tension: 0.1, spanGaps: true, pointRadius: 0 }] : []),
+        ...(showTeamAvgGlobal ? [{ label: 'チーム中央値', data: teamAvgData, borderColor: '#e8ff47', backgroundColor: 'transparent', borderWidth: 1.2, borderDash: [3, 3], tension: 0, spanGaps: true, pointRadius: 0 }] : []),
         ...(targetVal !== null && targetVal !== 0 ? [{ label: '目標', data: targetData, borderColor: '#ff4757', backgroundColor: 'transparent', borderWidth: 1.2, borderDash: [2, 2], pointRadius: 0, fill: false }] : [])
       ]
     },
@@ -984,7 +1000,7 @@ function updateProfile() {
               <option value="all" ${activeChartRange === 'all' ? 'selected' : ''}>過去全て</option>
             </select>
             <label class="toggle-checkbox" onclick="event.stopPropagation();">
-              <input type="checkbox" id="chk-team-${m.id}" ${showTeamAvgGlobal ? 'checked' : ''} onchange="handleTeamAvgToggle('${m.id}')"> 平均
+              <input type="checkbox" id="chk-team-${m.id}" ${showTeamAvgGlobal ? 'checked' : ''} onchange="handleTeamAvgToggle('${m.id}')"> 中央値
             </label>
           </div>
           <div style="position:relative; width:100%; height:160px;">
@@ -1081,6 +1097,7 @@ async function attemptLogin() {
       currentUser    = result.user;
       teamMembers    = result.members || [];
       coachesData    = result.coaches || [];
+      allMembersData = result.allMembers || teamMembers.map(n => ({ name: n, status: '現役' }));
       reportsData    = [];
       allBestRecords = {};
       appConfigMap   = result.config || {};
@@ -1121,6 +1138,7 @@ async function loadReportsInBackground() {
       groupSettingsData = result.groupSettings || groupSettingsData;
       vbtData       = result.vbtLogs || vbtData;
       otherExData   = result.otherExLogs || otherExData;
+      if (result.allMembers) allMembersData = result.allMembers;
       // 画面を再描画
       updateDashboard();
       if(document.getElementById('screen-profile').classList.contains('active')) updateProfile();
@@ -1156,9 +1174,34 @@ function initApp() {
     renderGroupList();
     renderGroupTargetButtons();
     document.getElementById('profile-grid-title').innerHTML = '各種目の歴代最高データ <span style="color:var(--red); font-size:11px; font-weight:normal; margin-left:6px;">※赤字は設定日数以上更新なし</span>';
+    // 指導者用: 現役を先に、引退は末尾に【引退】付きで表示
     const selector = document.getElementById('coach-member-select');
-    selector.innerHTML = teamMembers.map(m => `<option value="${m}">${m}</option>`).join('');
-    selectedPlayerForCoach = teamMembers[0] || null; 
+    const activeMembers = allMembersData.filter(m => m.status !== '引退');
+    const retiredMembers = allMembersData.filter(m => m.status === '引退');
+    selector.innerHTML = [
+      ...activeMembers.map(m => `<option value="${m.name}">${gradePrefix(m)}${m.name}</option>`),
+      ...retiredMembers.map(m => `<option value="${m.name}">【引退】${m.name}</option>`)
+    ].join('');
+    selectedPlayerForCoach = activeMembers[0]?.name || allMembersData[0]?.name || null;
+  } else if (currentUser.status === '引退') {
+    // 引退選手: 個人票とメッセージのみ表示
+    document.getElementById('nav-report-btn').style.display = 'none';
+    document.getElementById('nav-messages-btn').style.display = 'block';
+    document.getElementById('urge-btn-wrap').style.display = 'none';
+    document.getElementById('today-detail-wrap').style.display = 'none';
+    document.getElementById('coach-selector-card').style.display = 'none';
+    document.getElementById('coach-comment-card').style.display = 'none';
+    document.getElementById('coach-admin-card').style.display = 'none';
+    document.getElementById('coach-settings-card').style.display = 'none';
+    document.getElementById('profile-grid-title').textContent = '各種目の歴代最高データ';
+    selectedPlayerForCoach = null;
+    // ダッシュボードとランキングのナビを非表示
+    const navBtns = document.querySelectorAll('.nav-btn');
+    navBtns.forEach(btn => {
+      const screen = btn.getAttribute('data-screen');
+      if (screen === 'dashboard' || screen === 'ranking') btn.style.display = 'none';
+    });
+    showScreen('profile');
   } else {
     document.getElementById('nav-report-btn').style.display = 'block';
     document.getElementById('nav-messages-btn').style.display = 'block';
@@ -1253,12 +1296,14 @@ function updateDashboard() {
   document.getElementById('reported-count').textContent = doneList.length;
   document.getElementById('unreported-count').textContent = undoneList.length;
   document.getElementById('total-count').textContent = teamMembers.length;
-  const mkRow = (name, i, isDone) => `
-    <div class="today-row">
+  const mkRow = (name, i, isDone) => {
+    const dn = displayName(name);
+    return `<div class="today-row">
       <div class="t-avatar" style="background:${avatarColors[i%avatarColors.length]}20;color:${avatarColors[i%avatarColors.length]};">${name[0]}</div>
-      <span class="t-name">${name}</span>
+      <span class="t-name">${dn}</span>
       <span class="t-badge ${isDone?'badge-done':'badge-none'}">${isDone?'✓ 報告済':'未報告'}</span>
     </div>`;
+  };
   document.getElementById('done-list').innerHTML = doneList.map((m,i)=>mkRow(m,i,true)).join('');
   document.getElementById('unreported-list').innerHTML = undoneList.map((m,i)=>mkRow(m,i+doneList.length,false)).join('');
   // 指導者用：今日の報告詳細(表示中なら再描画)
@@ -1560,7 +1605,7 @@ function renderCoachMultiTargetList() {
   const wrap = document.getElementById('coach-multi-target-list');
   wrap.innerHTML = teamMembers.map(name => {
     const checked = name === selectedPlayerForCoach ? 'checked' : '';
-    return `<label class="group-member-chk"><input type="checkbox" class="coach-multi-chk" value="${name}" ${checked}><span>${name}</span></label>`;
+    return `<label class="group-member-chk"><input type="checkbox" class="coach-multi-chk" value="${name}" ${checked}><span>${displayName(name)}</span></label>`;
   }).join('');
 }
 
@@ -1676,7 +1721,7 @@ function openUrgeModal() {
   document.getElementById('urge-member-list').innerHTML = unreported.map(m => `
     <div class="urge-member-row">
       <input type="checkbox" class="urge-chk" value="${m}" checked onchange="updateUrgeCount()">
-      <span class="urge-name">${m}</span>
+      <span class="urge-name">${displayName(m)}</span>
     </div>`).join('');
   updateUrgeCount();
   document.getElementById('urge-modal').classList.add('active');
@@ -1734,7 +1779,7 @@ function openBulkMessageModal(mode) {
         </span>
       </div>
       <div id="bulk-target-list" style="display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto; padding:4px;">
-        ${teamMembers.map(name => `<label class="group-member-chk"><input type="checkbox" class="bulk-target-chk" value="${name}"><span>${name}</span></label>`).join('')}
+        ${teamMembers.map(name => `<label class="group-member-chk"><input type="checkbox" class="bulk-target-chk" value="${name}"><span>${displayName(name)}</span></label>`).join('')}
       </div>`;
   } else {
     document.getElementById('bulk-message-title').textContent = '🏷️ グループに送信';
@@ -1802,6 +1847,20 @@ function initNotifications() {
 function getNotifPermission() {
   return ('Notification' in window) ? Notification.permission : 'unsupported';
 }
+// 学年・引退状態に応じたプレフィックスを返す
+// 現役: ①②③ (学年不明は空)、引退: 【引】
+function gradePrefix(memberObj) {
+  if (!memberObj) return '';
+  if (memberObj.status === '引退') return '【引】';
+  const gradeMap = { '1': '①', '2': '②', '3': '③' };
+  return gradeMap[memberObj.grade] || '';
+}
+// 名前だけから allMembersData を参照してプレフィックス付きの表示名を返す
+function displayName(name) {
+  const m = allMembersData.find(x => x.name === name);
+  return m ? (gradePrefix(m) + name) : name;
+}
+
 function updateNotifStatusUI() {
   const btn = document.getElementById('notif-settings-btn');
   const txt = document.getElementById('notif-status-text');
@@ -1903,7 +1962,7 @@ function openGroupModal(groupId = '') {
   const memberList = document.getElementById('group-member-list');
   memberList.innerHTML = teamMembers.map(name => {
     const checked = group && group.members.includes(name) ? 'checked' : '';
-    return `<label class="group-member-chk"><input type="checkbox" value="${name}" ${checked}><span>${name}</span></label>`;
+    return `<label class="group-member-chk"><input type="checkbox" value="${name}" ${checked}><span>${displayName(name)}</span></label>`;
   }).join('');
   document.getElementById('group-modal').classList.add('active');
 }
