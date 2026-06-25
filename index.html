@@ -378,7 +378,7 @@
       <div class="card">
         <div class="card-title">📝 トレーニング報告</div>
         <div style="display:flex; gap:8px; margin-bottom:14px;">
-          <button class="pdf-btn" style="flex:1;justify-content:center;" onclick="openVbtModal()">⚡ VBT報告</button>
+          <button id="btn-vbt-report" class="pdf-btn" style="flex:1;justify-content:center;" onclick="openVbtModal()">⚡ VBT報告</button>
           <button class="pdf-btn" style="flex:1;justify-content:center;" onclick="openOtherExModal()">➕ その他の種目</button>
         </div>
         <div class="form-grid" id="report-form">
@@ -693,7 +693,7 @@
 </div>
 
 <script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzDjwmWxSh2MisKWZIXw22m3Iabvto6GOdUzeP-8UUKc03Ff8sESrwYF5aUs7Mk2eCU/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycby1l0FEsOh70eLr1lAhr4bx7NyFNf_y7HTlhq7ldgG71gxhU9vbVnBAeZ96jqfZUkaz/exec';
 
 let currentUser = null;
 let teamMembers = [];
@@ -1147,6 +1147,26 @@ async function loadReportsInBackground() {
   } catch(e) { console.warn('バックグラウンドデータ取得失敗:', e); }
 }
 
+function applyPlanRestrictions(plan) {
+  const isBasic = plan === 'basic';
+  // ランキングタブ
+  const rankingBtn = document.querySelector('.nav-btn[data-screen="ranking"]');
+  if (rankingBtn) rankingBtn.style.display = isBasic ? 'none' : '';
+  // VBT報告ボタン
+  const vbtBtn = document.getElementById('btn-vbt-report');
+  if (vbtBtn) vbtBtn.style.display = isBasic ? 'none' : '';
+  // グループ管理カード(指導者用)
+  const adminCard = document.getElementById('coach-admin-card');
+  const settCard  = document.getElementById('coach-settings-card');
+  if (adminCard && adminCard.style.display !== 'none') adminCard.style.display = isBasic ? 'none' : 'block';
+  if (settCard  && settCard.style.display  !== 'none') settCard.style.display  = isBasic ? 'none' : 'block';
+  // グループに送信ボタン(メッセージ画面)
+  const groupMsgBtns = document.querySelectorAll('.pdf-btn');
+  groupMsgBtns.forEach(btn => {
+    if (btn.textContent.includes('グループに送信')) btn.style.display = isBasic ? 'none' : '';
+  });
+}
+
 function initApp() {
   document.getElementById('hdr-username').textContent = currentUser.name;
   document.getElementById('hdr-avatar-char').textContent = currentUser.name[0];
@@ -1183,6 +1203,8 @@ function initApp() {
       ...retiredMembers.map(m => `<option value="${m.name}">【引退】${m.name}</option>`)
     ].join('');
     selectedPlayerForCoach = activeMembers[0]?.name || allMembersData[0]?.name || null;
+    // 指導者: プランによる機能制御
+    applyPlanRestrictions(currentUser.plan || 'basic');
   } else if (currentUser.status === '引退') {
     // 引退選手: 個人票とメッセージのみ表示
     document.getElementById('nav-report-btn').style.display = 'none';
@@ -1213,6 +1235,8 @@ function initApp() {
     document.getElementById('coach-settings-card').style.display = 'none';
     document.getElementById('profile-grid-title').textContent = '各種目の歴代最高データ';
     selectedPlayerForCoach = null;
+    // 選手: プランによる機能制御
+    applyPlanRestrictions(currentUser.plan || 'basic');
   }
   initNotifications();
   loadComments();
